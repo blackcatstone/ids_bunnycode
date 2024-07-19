@@ -1,7 +1,9 @@
 # ids_bunnycode
 
 pip install scapy
+
 pip install tqdm
+
 위의 라이브러리 설치가 필요합니다. 혹 구현하다가 또 install할 게 있으면 여기다 계속 추가할게요.
 
 스레드 수는 본인의 cpu에 따라 다르지만 적어도 10이상은 하셔야 퍼포먼스 속도가 납니다.
