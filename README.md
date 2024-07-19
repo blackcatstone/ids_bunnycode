@@ -1,5 +1,7 @@
 # ids_bunnycode
 
+Python 3.11.9
+
 pip install scapy
 
 pip install tqdm
