@@ -23,101 +23,113 @@ class Packet:
     def decode_protocol_stack(self, packet: ScapyPacket) -> Dict[str, Any]:
         stack = {}
         
-        # Link Layer
-        if Ether in packet:
-            stack['Ethernet'] = {
-                'src': packet[Ether].src,
-                'dst': packet[Ether].dst,
-                'type': packet[Ether].type
-            }
-        elif Dot11 in packet:
-            stack['WiFi'] = {
-                'type': packet[Dot11].type,
-                'subtype': packet[Dot11].subtype
-            }
+        try:
+            # Link Layer
+            if Ether in packet:
+                stack['Ethernet'] = {
+                    'src': packet[Ether].src,
+                    'dst': packet[Ether].dst,
+                    'type': packet[Ether].type
+                }
+            elif Dot11 in packet:
+                stack['WiFi'] = {
+                    'type': packet[Dot11].type,
+                    'subtype': packet[Dot11].subtype
+                }
 
-        # Network Layer
-        if IP in packet:
-            stack['IP'] = {
-                'version': 4,
-                'src': packet[IP].src,
-                'dst': packet[IP].dst,
-                'proto': packet[IP].proto
-            }
-        elif IPv6 in packet:
-            stack['IP'] = {
-                'version': 6,
-                'src': packet[IPv6].src,
-                'dst': packet[IPv6].dst,
-                'nh': packet[IPv6].nh
-            }
-        elif ARP in packet:
-            stack['ARP'] = {
-                'op': packet[ARP].op,
-                'hwsrc': packet[ARP].hwsrc,
-                'psrc': packet[ARP].psrc,
-                'hwdst': packet[ARP].hwdst,
-                'pdst': packet[ARP].pdst
-            }
+            # Network Layer
+            if IP in packet:
+                stack['IP'] = {
+                    'version': 4,
+                    'src': packet[IP].src,
+                    'dst': packet[IP].dst,
+                    'proto': packet[IP].proto
+                }
+            elif IPv6 in packet:
+                stack['IP'] = {
+                    'version': 6,
+                    'src': packet[IPv6].src,
+                    'dst': packet[IPv6].dst,
+                    'nh': packet[IPv6].nh
+                }
+            elif ARP in packet:
+                stack['ARP'] = {
+                    'op': packet[ARP].op,
+                    'hwsrc': packet[ARP].hwsrc,
+                    'psrc': packet[ARP].psrc,
+                    'hwdst': packet[ARP].hwdst,
+                    'pdst': packet[ARP].pdst
+                }
 
-        # Transport Layer
-        if TCP in packet:
-            stack['TCP'] = {
-                'sport': packet[TCP].sport,
-                'dport': packet[TCP].dport,
-                'seq': packet[TCP].seq,
-                'ack': packet[TCP].ack,
-                'flags': packet[TCP].flags
-            }
-        elif UDP in packet:
-            stack['UDP'] = {
-                'sport': packet[UDP].sport,
-                'dport': packet[UDP].dport,
-                'len': packet[UDP].len
-            }
-        elif ICMP in packet:
-            stack['ICMP'] = {
-                'type': packet[ICMP].type,
-                'code': packet[ICMP].code
-            }
+            # Transport Layer
+            if TCP in packet:
+                stack['TCP'] = {
+                    'sport': packet[TCP].sport,
+                    'dport': packet[TCP].dport,
+                    'seq': packet[TCP].seq,
+                    'ack': packet[TCP].ack,
+                    'flags': str(packet[TCP].flags)
+                }
+            elif UDP in packet:
+                stack['UDP'] = {
+                    'sport': packet[UDP].sport,
+                    'dport': packet[UDP].dport,
+                    'len': packet[UDP].len
+                }
+            elif ICMP in packet:
+                stack['ICMP'] = {
+                    'type': packet[ICMP].type,
+                    'code': packet[ICMP].code
+                }
 
-        # Application Layer
-        if packet.haslayer(HTTP):
-            stack['HTTP'] = {
-                'method': packet[HTTP].Method.decode() if packet[HTTP].Method else None,
-                'path': packet[HTTP].Path.decode() if packet[HTTP].Path else None,
-                'status_code': packet[HTTP].Status_Code if hasattr(packet[HTTP], 'Status_Code') else None
-            }
-        elif packet.haslayer(DNS):
-            stack['DNS'] = {
-                'id': packet[DNS].id,
-                'qr': packet[DNS].qr,
-                'opcode': packet[DNS].opcode
-            }
-        
-        # HTTPS (assuming it's over TCP port 443)
-        if TCP in packet and (packet[TCP].sport == 443 or packet[TCP].dport == 443):
-            stack['HTTPS'] = {
-                'sport': packet[TCP].sport,
-                'dport': packet[TCP].dport
-            }
-        
-        # MQTT (assuming it's over TCP port 1883 for unencrypted or 8883 for encrypted)
-        if TCP in packet and (packet[TCP].sport in [1883, 8883] or packet[TCP].dport in [1883, 8883]):
-            stack['MQTT'] = {
-                'sport': packet[TCP].sport,
-                'dport': packet[TCP].dport
-            }
+            # Application Layer
+            if packet.haslayer(HTTP):
+                stack['HTTP'] = {
+                    'method': packet[HTTP].Method.decode() if packet[HTTP].Method else None,
+                    'path': packet[HTTP].Path.decode() if packet[HTTP].Path else None,
+                    'status_code': packet[HTTP].Status_Code if hasattr(packet[HTTP], 'Status_Code') else None
+                }
+            elif packet.haslayer(DNS):
+                stack['DNS'] = {
+                    'id': packet[DNS].id,
+                    'qr': packet[DNS].qr,
+                    'opcode': packet[DNS].opcode
+                }
+            
+            # HTTPS (assuming it's over TCP port 443)
+            if TCP in packet and (packet[TCP].sport == 443 or packet[TCP].dport == 443):
+                stack['HTTPS'] = {
+                    'sport': packet[TCP].sport,
+                    'dport': packet[TCP].dport
+                }
+            
+            # MQTT (assuming it's over TCP port 1883 for unencrypted or 8883 for encrypted)
+            if TCP in packet and (packet[TCP].sport in [1883, 8883] or packet[TCP].dport in [1883, 8883]):
+                stack['MQTT'] = {
+                    'sport': packet[TCP].sport,
+                    'dport': packet[TCP].dport
+                }
+        except Exception as e:
+            stack['error'] = f"Error decoding packet: {str(e)}"
 
         return stack
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             'timestamp': self.timestamp,
-            'protocol_stack': self.protocol_stack,
+            'protocol_stack': self._ensure_serializable(self.protocol_stack),
             'length': self.length,
             #'raw_packet': self.raw_packet.hex() 굳이 필요할 것 같지 않아 주석처리함
         }
+    def _ensure_serializable(self, obj): #분석된걸 텍스트파일로 확인하기 위해 넣은 것이기에 나중에 없앨 가능성 있음
+        if isinstance(obj, dict):
+            return {k: self._ensure_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._ensure_serializable(v) for v in obj]
+        elif isinstance(obj, (int, float, str, bool, type(None))):
+            return obj
+        else:
+            return str(obj)
 
 class ParallelPCAPReader:
     def __init__(self, filename: str, num_threads: int = 4):
@@ -149,14 +161,18 @@ class ParallelPCAPReader:
 
     def process_packets(self):
         while True:
-            scapy_packet = self.packet_queue.get()
-            if scapy_packet is None:
-                self.packet_queue.put(None)
-                break
-            
-            packet = Packet(scapy_packet)
-            self.result_queue.put(packet)
-            self.processed_packets += 1
+            try:
+                scapy_packet = self.packet_queue.get()
+                if scapy_packet is None:
+                    self.packet_queue.put(None)
+                    break
+                
+                packet = Packet(scapy_packet)
+                self.result_queue.put(packet)
+                self.processed_packets += 1
+            except Exception as e:
+                print(f"Error processing packet: {str(e)}")
+                continue
 
     def run(self):
         read_thread = threading.Thread(target=self.read_packets)
