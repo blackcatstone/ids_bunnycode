@@ -137,9 +137,6 @@ class Packet:
 
 class ParallelPCAPReader:
     def __init__(self, filename: str, num_threads: int = 4):
-        if not os.path.isfile(filename):
-            raise FileNotFoundError(f"File not found: {filename}")
-
         self.filename = filename
         self.num_threads = num_threads
         self.packet_queue = Queue(maxsize=1000)

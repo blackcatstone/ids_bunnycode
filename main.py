@@ -1,8 +1,6 @@
-
 from pcap_decoder import ParallelPCAPReader
 from tcp_stream import TCPStreamAnalyzer
-import json
-from tqdm import tqdm
+import json, os
 
 def get_user_input():
     pcap_file = input("PCAP 파일 경로를 입력하세요: ")
@@ -21,13 +19,20 @@ def encode_payloads(streams):
     return encoded_streams
 
 def main():
-    print("PCAP 파일 분석 프로그램에 오신 것을 환영합니다!")
+    print("PCAP 파일 분석 프로그램에 오신 것을 환영합니다!\n")
     
     pcap_file, threads, num_packets, output_file = get_user_input()
-    reader = ParallelPCAPReader(pcap_file, num_threads=threads)
+
+    normalized_path = os.path.abspath(pcap_file)
+    if not os.path.isfile(normalized_path):
+        print(f"File not found: {pcap_file}")
+        print(f"Also check your current working directory: {os.getcwd()}")
+        return
+
+    reader = ParallelPCAPReader(normalized_path, num_threads=threads)
     tcp_analyzer = TCPStreamAnalyzer()
     
-    print("PCAP 파일 읽기 및 패킷 처리 중...")
+    print("\nPCAP 파일 읽기 및 패킷 처리 중...")
     reader.run()
 
     total_packets = reader.get_total_packets()
@@ -55,7 +60,7 @@ def main():
     stats = tcp_analyzer.get_statistics() # stream
     print(f"총 스트림 수: {stats['total_streams']}") # stream
 
-    print(f"결과가 {output_file}, {output_file}_streams.json 에 저장되었습니다.")
+    print(f"결과가 {output_file}, {output_file}_streams.json에 저장되었습니다.")
 
 if __name__ == "__main__":
     main()
