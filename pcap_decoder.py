@@ -1,11 +1,14 @@
+
 import os
-from scapy.all import PcapReader
+from scapy.all import *
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.l2 import Ether, ARP
 from scapy.layers.http import HTTP
 from scapy.layers.dns import DNS
 from scapy.layers.inet6 import IPv6
 from scapy.layers.dot11 import Dot11
+from scapy.layers.ntp import NTP
+from scapy.layers.snmp import SNMP
 from scapy.packet import Packet as ScapyPacket
 from typing import Dict, Any, Optional
 import threading
@@ -17,9 +20,9 @@ class Packet:
         self.timestamp = float(scapy_packet.time)
         self.protocol_stack = self.decode_protocol_stack(scapy_packet)
         self.length = len(scapy_packet)
-        self.payload = self.extract_payload(scapy_packet)
+        self.raw_packet = bytes(scapy_packet)
 
-    def decode_protocol_stack(self, packet: ScapyPacket) -> Dict[str, Any]:
+    def decode_protocol_stack(self, packet: ScapyPacket) -> Dict[str, Any]: # type: ignore
         stack = {}
         
         try:
@@ -82,19 +85,37 @@ class Packet:
                 }
 
             # Application Layer
-            if packet.haslayer(HTTP):
-                stack['HTTP'] = {
-                    'method': packet[HTTP].Method.decode() if packet[HTTP].Method else None,
-                    'path': packet[HTTP].Path.decode() if packet[HTTP].Path else None,
-                    'status_code': packet[HTTP].Status_Code if hasattr(packet[HTTP], 'Status_Code') else None
-                }
+            if packet.haslayer(HTTP) and packet[HTTP].fields:
+                try:
+                    stack['HTTP'] = {
+                        'method': packet[HTTP].Method.decode() if packet[HTTP].Method else None,
+                        'path': packet[HTTP].Path.decode() if packet[HTTP].Path else None,
+                        'status_code': packet[HTTP].Status_Code if hasattr(packet[HTTP], 'Status_Code') else None
+                    }
+                except Exception as e: #실제로 http 데이터를 포함하지 않거나 예상된 필드가 없는 경우
+                    stack['error'] = f"Error decoding packet: {type(e).__name__} - {str(e)}"
             elif packet.haslayer(DNS):
                 stack['DNS'] = {
                     'id': packet[DNS].id,
                     'qr': packet[DNS].qr,
                     'opcode': packet[DNS].opcode
                 }
+            elif packet.haslayer(SNMP):
+                stack['SNMP'] = {
+                    'version': packet[SNMP].version,
+                    'community': packet[SNMP].community.decode('utf-8', errors='ignore')
+                }
             
+            if UDP in packet and (packet[UDP].sport == 123 or packet[UDP].dport == 123):
+                if packet.haslayer(NTP):
+                    stack['NTP'] = {
+                        'version': packet[NTP].version,
+                        'mode': packet[NTP].mode,
+                        'stratum': packet[NTP].stratum,
+                        'poll': packet[NTP].poll,
+                        'precision': packet[NTP].precision
+                    }
+             
             # HTTPS (assuming it's over TCP port 443)
             if TCP in packet and (packet[TCP].sport == 443 or packet[TCP].dport == 443):
                 stack['HTTPS'] = {
@@ -108,17 +129,53 @@ class Packet:
                     'sport': packet[TCP].sport,
                     'dport': packet[TCP].dport
                 }
+            if TCP in packet and (packet[TCP].sport == 21 or packet[TCP].dport == 21):
+                stack['FTP'] = {
+                    'sport': packet[TCP].sport,
+                    'dport': packet[TCP].dport
+                }
+                if Raw in packet:
+                    payload = packet[Raw].load.decode('utf-8', errors='ignore')
+                    if payload.startswith(('USER ', 'PASS ', 'RETR ', 'STOR ')):
+                        stack['FTP']['command'] = payload.split()[0]
+                        
+            if TCP in packet and (packet[TCP].sport == 22 or packet[TCP].dport == 22):
+                stack['SSH'] = {
+                    'sport': packet[TCP].sport,
+                    'dport': packet[TCP].dport
+                }
+                if Raw in packet:
+                    payload = packet[Raw].load
+                    if b"SSH-" in payload:
+                        stack['SSH']['version'] = payload.split(b'\r\n')[0].decode('utf-8', errors='ignore')
+                        
+            if TCP in packet:
+                payload = ''
+                if Raw in packet:
+                    payload = packet[Raw].load.decode('utf-8', errors='ignore')
+                
+                if (packet[TCP].sport == 6667 or packet[TCP].dport == 6667) or \
+                ('NICK ' in payload or 'JOIN #' in payload or 'PRIVMSG ' in payload):
+                    stack['IRC'] = {
+                        'sport': packet[TCP].sport,
+                        'dport': packet[TCP].dport
+                    }
+                    if payload:
+                        command = payload.split()[0] if ' ' in payload else payload.strip()
+                        stack['IRC']['command'] = command
+
+                        
         except Exception as e:
             stack['error'] = f"Error decoding packet: {str(e)}"
 
         return stack
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]: # type: ignore
         return {
             'timestamp': self.timestamp,
             'protocol_stack': self._ensure_serializable(self.protocol_stack),
             'length': self.length,
-            'payload': self.payload.hex()
+            #'raw_packet': self.raw_packet.hex() 굳이 필요할 것 같지 않아 주석처리함
         }
     def _ensure_serializable(self, obj): #분석된걸 텍스트파일로 확인하기 위해 넣은 것이기에 나중에 없앨 가능성 있음
         if isinstance(obj, dict):
@@ -129,11 +186,6 @@ class Packet:
             return obj
         else:
             return str(obj)
-        
-    def extract_payload(self, packet: ScapyPacket) -> bytes:
-        while packet.payload:
-            packet = packet.payload
-        return bytes(packet)
 
 class ParallelPCAPReader:
     def __init__(self, filename: str, num_threads: int = 4):
