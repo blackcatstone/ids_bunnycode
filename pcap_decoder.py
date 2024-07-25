@@ -1,4 +1,3 @@
-
 import os
 from scapy.all import *
 from scapy.layers.inet import IP, TCP, UDP, ICMP
@@ -10,7 +9,7 @@ from scapy.layers.dot11 import Dot11
 from scapy.layers.ntp import NTP
 from scapy.layers.snmp import SNMP
 from scapy.packet import Packet as ScapyPacket
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import threading
 from queue import Queue
 from tqdm import tqdm
@@ -20,6 +19,7 @@ class Packet:
         self.timestamp = float(scapy_packet.time)
         self.protocol_stack = self.decode_protocol_stack(scapy_packet)
         self.length = len(scapy_packet)
+        self.payload = self.extract_payload(scapy_packet)
         self.raw_packet = bytes(scapy_packet)
 
     def decode_protocol_stack(self, packet: ScapyPacket) -> Dict[str, Any]: # type: ignore
@@ -175,6 +175,7 @@ class Packet:
             'timestamp': self.timestamp,
             'protocol_stack': self._ensure_serializable(self.protocol_stack),
             'length': self.length,
+            'payload': self.payload.hex()
             #'raw_packet': self.raw_packet.hex() 굳이 필요할 것 같지 않아 주석처리함
         }
     def _ensure_serializable(self, obj): #분석된걸 텍스트파일로 확인하기 위해 넣은 것이기에 나중에 없앨 가능성 있음
@@ -186,6 +187,11 @@ class Packet:
             return obj
         else:
             return str(obj)
+
+    def extract_payload(self, packet: ScapyPacket) -> bytes:
+        while packet.payload:
+            packet = packet.payload
+        return bytes(packet)
 
 class ParallelPCAPReader:
     def __init__(self, filename: str, num_threads: int = 4):
