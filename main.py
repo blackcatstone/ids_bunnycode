@@ -1,5 +1,5 @@
 from pcap_decoder import ParallelPCAPReader
-from tcp_stream import TCPStreamAnalyzer
+from network_stream import StreamAnalyzer
 import json, os
 
 def get_user_input():
@@ -30,7 +30,7 @@ def main():
         return
 
     reader = ParallelPCAPReader(normalized_path, num_threads=threads)
-    tcp_analyzer = TCPStreamAnalyzer()
+    network_analyzer = StreamAnalyzer()
     
     print("\nPCAP 파일 읽기 및 패킷 처리 중...")
     reader.run()
@@ -48,19 +48,25 @@ def main():
             json.dump(packet_dict, f, indent=2)
             f.write("\n")
 
-            tcp_analyzer.process_packet(packet_dict)
+            network_analyzer.process_packet(packet_dict)
 
-    all_streams = tcp_analyzer.get_all_streams()
-    encoded_streams = encode_payloads(all_streams)
-    with open(f'{output_file}_streams.json', 'w') as file:
-        json.dump(encoded_streams, file, indent=4)
+    all_streams = network_analyzer.get_all_streams()
+
+     # TCP 스트림을 JSON 파일로 저장    
+    with open(f'{output_file}_tcp.json', 'w', encoding='utf-8') as file:
+        json.dump(all_streams['tcp'], file, indent=4, ensure_ascii=False)
+
+    # UDP 그룹을 JSON 파일로 저장
+    with open(f'{output_file}_udp.json', 'w', encoding='utf-8') as file:
+        json.dump(all_streams['udp'], file, indent=4, ensure_ascii=False)
 
     print(f"\n분석 완료: {min(num_packets, total_packets) if num_packets != 0 else total_packets}개의 패킷을 분석했습니다.")
 
-    stats = tcp_analyzer.get_statistics() # stream
-    print(f"총 스트림 수: {stats['total_streams']}") # stream
+    stats = network_analyzer.get_statistics()
+    print(f"총 스트림 수: {stats['total_tcp_streams']}")
+    print(f"총 UDP 그룹 수: {stats['total_udp_groups']}")
 
-    print(f"결과가 {output_file}, {output_file}_streams.json에 저장되었습니다.")
+    print(f"\n결과가 {output_file}, {output_file}_tcp.json, {output_file}_udp.json에 저장되었습니다.")
 
 if __name__ == "__main__":
     main()
