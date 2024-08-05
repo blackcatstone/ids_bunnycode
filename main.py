@@ -1,5 +1,6 @@
 from pcap_decoder import ParallelPCAPReader
 from network_stream import StreamAnalyzer
+from header_extrator import HeaderExtractor
 import json, os
 
 def get_user_input():
@@ -31,6 +32,7 @@ def main():
 
     reader = ParallelPCAPReader(normalized_path, num_threads=threads)
     network_analyzer = StreamAnalyzer()
+    header_extractor = HeaderExtractor()
     
     print("\nPCAP 파일 읽기 및 패킷 처리 중...")
     reader.run()
@@ -49,6 +51,7 @@ def main():
             f.write("\n")
 
             network_analyzer.process_packet(packet_dict)
+            header_extractor.process_packet(packet)
 
     all_streams = network_analyzer.get_all_streams()
 
@@ -60,13 +63,20 @@ def main():
     with open(f'{output_file}_udp.json', 'w', encoding='utf-8') as file:
         json.dump(all_streams['udp'], file, indent=4, ensure_ascii=False)
 
+    header_extractor.save_to_json(f'{output_file}_tcpip_benign.json', f'{output_file}_tcpip_malicious.json')
+    
     print(f"\n분석 완료: {min(num_packets, total_packets) if num_packets != 0 else total_packets}개의 패킷을 분석했습니다.")
 
-    stats = network_analyzer.get_statistics()
-    print(f"총 스트림 수: {stats['total_tcp_streams']}")
-    print(f"총 UDP 그룹 수: {stats['total_udp_groups']}")
+    stream_stats = network_analyzer.get_statistics()
+    print(f"총 스트림 수: {stream_stats['total_tcp_streams']}")
+    print(f"총 UDP 그룹 수: {stream_stats['total_udp_groups']}")
 
-    print(f"\n결과가 {output_file}, {output_file}_tcp.json, {output_file}_udp.json에 저장되었습니다.")
+    header_stats = header_extractor.get_statistics()
+    print(f"정상 패킷 수: {header_stats['benign_packets']}")
+    print(f"악성 패킷 수: {header_stats['malicious_packets']}")
+
+    print(f"\n결과가 {output_file}, {output_file}_tcp.json, {output_file}_udp.json, {output_file}_tcpip_benign.json, {output_file}_tcpip_malicious.json에 저장되었습니다.")
+    
 
 if __name__ == "__main__":
     main()
