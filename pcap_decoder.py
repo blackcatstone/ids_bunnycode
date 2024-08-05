@@ -2,7 +2,7 @@ import os
 from scapy.all import *
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.l2 import Ether, ARP
-from scapy.layers.http import HTTP
+from scapy.layers.http import HTTPRequest, HTTPResponse
 from scapy.layers.dns import DNS
 from scapy.layers.inet6 import IPv6
 from scapy.layers.dot11 import Dot11
@@ -22,12 +22,12 @@ class Packet:
         self.payload = self.extract_payload(scapy_packet)
         self.raw_packet = bytes(scapy_packet)
 
-    def decode_protocol_stack(self, packet: ScapyPacket) -> Dict[str, Any]: # type: ignore
+    def decode_protocol_stack(self, packet: ScapyPacket) -> Dict[str, Any]:
         stack = {}
         
         try:
             # Link Layer
-            '''if Ether in packet:
+            if Ether in packet:
                 stack['Ethernet'] = {
                     'src': packet[Ether].src,
                     'dst': packet[Ether].dst,
@@ -37,7 +37,7 @@ class Packet:
                 stack['WiFi'] = {
                     'type': packet[Dot11].type,
                     'subtype': packet[Dot11].subtype
-                }'''
+                }
 
             # Network Layer
             if IP in packet:
@@ -111,24 +111,36 @@ class Packet:
                 }
 
             # Application Layer
-            if packet.haslayer(HTTP) and packet[HTTP].fields:
+            if packet.haslayer(HTTPRequest):
                 try:
                     headers = {}
-                    if packet[HTTP].Headers:
-                        for header in packet[HTTP].Headers.decode().split('\r\n'):
-                            if ": " in header:
-                                key, value = header.split(": ", 1)
-                                headers[key] = value
+                    for header in packet[HTTPRequest].fields_desc:
+                        field_name = header.name
+                        headers[field_name] = str(getattr(packet[HTTPRequest], field_name))
                     
                     stack['HTTP'] = {
-                        'method': packet[HTTP].Method.decode() if packet[HTTP].Method else None,
-                        'path': packet[HTTP].Path.decode() if packet[HTTP].Path else None,
-                        'status_code': packet[HTTP].Status_Code if hasattr(packet[HTTP], 'Status_Code') else None,
+                        'method': packet[HTTPRequest].Method.decode() if packet[HTTPRequest].Method else None,
+                        'host': packet[HTTPRequest].Host.decode() if packet[HTTPRequest].Host else None,
+                        'path': packet[HTTPRequest].Path.decode() if packet[HTTPRequest].Path else None,
                         'headers': headers,
-                        'body': packet[HTTP].load.decode(errors='ignore') if Raw in packet else ''
+                        'body': packet[HTTPRequest].load.decode(errors='ignore') if Raw in packet else ''
                     }
-                except Exception as e: #실제로 http 데이터를 포함하지 않거나 예상된 필드가 없는 경우
-                    stack['error'] = f"Error decoding packet: {type(e).__name__} - {str(e)}"
+                except Exception as e:
+                    stack['error'] = f"Error decoding HTTP request: {type(e).__name__} - {str(e)}"
+            elif packet.haslayer(HTTPResponse):
+                try:
+                    headers = {}
+                    for header in packet[HTTPResponse].fields_desc:
+                        field_name = header.name
+                        headers[field_name] = str(getattr(packet[HTTPResponse], field_name))
+
+                    stack['HTTP'] = {
+                        'status_code': packet[HTTPResponse].Status_Code if hasattr(packet[HTTPResponse], 'Status_Code') else None,
+                        'headers': headers,
+                        'body': packet[HTTPResponse].load.decode(errors='ignore') if Raw in packet else ''
+                    }
+                except Exception as e:
+                    stack['error'] = f"Error decoding HTTP response: {type(e).__name__} - {str(e)}"
             elif packet.haslayer(DNS):
                 stack['DNS'] = {
                     'id': packet[DNS].id,
@@ -168,8 +180,21 @@ class Packet:
             if TCP in packet and (packet[TCP].sport == 443 or packet[TCP].dport == 443):
                 stack['HTTPS'] = {
                     'sport': packet[TCP].sport,
-                    'dport': packet[TCP].dport
+                    'dport': packet[TCP].dport,
+                    'seq': packet[TCP].seq,
+                    'ack': packet[TCP].ack,
+                    'flags': str(packet[TCP].flags),
+                    'window': packet[TCP].window,
+                    'chksum': packet[TCP].chksum,
+                    'urgptr': packet[TCP].urgptr,
+                    'options': packet[TCP].options
                 }
+                if Raw in packet:
+                    try:
+                        payload = packet[Raw].load.decode('utf-8', errors='ignore')
+                        stack['HTTPS']['payload'] = payload
+                    except Exception as e:
+                        stack['HTTPS']['payload_error'] = f"Error decoding HTTPS payload: {type(e).__name__} - {str(e)}"
             
             # MQTT (assuming it's over TCP port 1883 for unencrypted or 8883 for encrypted)
             if TCP in packet and (packet[TCP].sport in [1883, 8883] or packet[TCP].dport in [1883, 8883]):
@@ -223,15 +248,15 @@ class Packet:
 
         return stack
 
-    def to_dict(self) -> Dict[str, Any]: # type: ignore
+    def to_dict(self) -> Dict[str, Any]:
         return {
             'timestamp': self.timestamp,
             'protocol_stack': self._ensure_serializable(self.protocol_stack),
             'length': self.length,
             'payload': self.payload.hex()
-            #'raw_packet': self.raw_packet.hex() 굳이 필요할 것 같지 않아 주석처리함
         }
-    def _ensure_serializable(self, obj): #분석된걸 텍스트파일로 확인하기 위해 넣은 것이기에 나중에 없앨 가능성 있음
+
+    def _ensure_serializable(self, obj):
         if isinstance(obj, dict):
             return {k: self._ensure_serializable(v) for k, v in obj.items()}
         elif isinstance(obj, list):
@@ -314,4 +339,4 @@ class ParallelPCAPReader:
         return self.processed_packets / self.total_packets if self.total_packets > 0 else 0
 
 if __name__ == "__main__":
-    pass 
+    pass
