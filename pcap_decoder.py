@@ -27,7 +27,7 @@ class Packet:
         
         try:
             # Link Layer
-            if Ether in packet:
+            '''if Ether in packet:
                 stack['Ethernet'] = {
                     'src': packet[Ether].src,
                     'dst': packet[Ether].dst,
@@ -37,7 +37,7 @@ class Packet:
                 stack['WiFi'] = {
                     'type': packet[Dot11].type,
                     'subtype': packet[Dot11].subtype
-                }
+                }'''
 
             # Network Layer
             if IP in packet:
@@ -45,17 +45,33 @@ class Packet:
                     'version': 4,
                     'src': packet[IP].src,
                     'dst': packet[IP].dst,
-                    'proto': packet[IP].proto
+                    'proto': packet[IP].proto,
+                    'ttl': packet[IP].ttl,
+                    'flags': packet[IP].flags,
+                    'frag': packet[IP].frag,
+                    'tos': packet[IP].tos,
+                    'id': packet[IP].id,
+                    'ihl': packet[IP].ihl,
+                    'len': packet[IP].len,
+                    'chksum': packet[IP].chksum
                 }
             elif IPv6 in packet:
                 stack['IP'] = {
                     'version': 6,
                     'src': packet[IPv6].src,
                     'dst': packet[IPv6].dst,
-                    'nh': packet[IPv6].nh
+                    'nh': packet[IPv6].nh,
+                    'fl': packet[IPv6].fl,
+                    'tc': packet[IPv6].tc,
+                    'hlim': packet[IPv6].hlim,
+                    'plen': packet[IPv6].plen
                 }
             elif ARP in packet:
                 stack['ARP'] = {
+                    'hwtype': packet[ARP].hwtype,
+                    'ptype': packet[ARP].ptype,
+                    'hwlen': packet[ARP].hwlen,
+                    'plen': packet[ARP].plen,
                     'op': packet[ARP].op,
                     'hwsrc': packet[ARP].hwsrc,
                     'psrc': packet[ARP].psrc,
@@ -70,27 +86,46 @@ class Packet:
                     'dport': packet[TCP].dport,
                     'seq': packet[TCP].seq,
                     'ack': packet[TCP].ack,
-                    'flags': str(packet[TCP].flags)
+                    'dataofs': packet[TCP].dataofs,
+                    'reserved': packet[TCP].reserved,
+                    'flags': str(packet[TCP].flags),
+                    'window': packet[TCP].window,
+                    'chksum': packet[TCP].chksum,
+                    'urgptr': packet[TCP].urgptr,
+                    'options': packet[TCP].options
                 }
             elif UDP in packet:
                 stack['UDP'] = {
                     'sport': packet[UDP].sport,
                     'dport': packet[UDP].dport,
-                    'len': packet[UDP].len
+                    'len': packet[UDP].len,
+                    'chksum': packet[UDP].chksum
                 }
             elif ICMP in packet:
                 stack['ICMP'] = {
                     'type': packet[ICMP].type,
-                    'code': packet[ICMP].code
+                    'code': packet[ICMP].code,
+                    'chksum': packet[ICMP].chksum,
+                    'id': packet[ICMP].id if hasattr(packet[ICMP], 'id') else None,
+                    'seq': packet[ICMP].seq if hasattr(packet[ICMP], 'seq') else None
                 }
 
             # Application Layer
             if packet.haslayer(HTTP) and packet[HTTP].fields:
                 try:
+                    headers = {}
+                    if packet[HTTP].Headers:
+                        for header in packet[HTTP].Headers.decode().split('\r\n'):
+                            if ": " in header:
+                                key, value = header.split(": ", 1)
+                                headers[key] = value
+                    
                     stack['HTTP'] = {
                         'method': packet[HTTP].Method.decode() if packet[HTTP].Method else None,
                         'path': packet[HTTP].Path.decode() if packet[HTTP].Path else None,
-                        'status_code': packet[HTTP].Status_Code if hasattr(packet[HTTP], 'Status_Code') else None
+                        'status_code': packet[HTTP].Status_Code if hasattr(packet[HTTP], 'Status_Code') else None,
+                        'headers': headers,
+                        'body': packet[HTTP].load.decode(errors='ignore') if Raw in packet else ''
                     }
                 except Exception as e: #실제로 http 데이터를 포함하지 않거나 예상된 필드가 없는 경우
                     stack['error'] = f"Error decoding packet: {type(e).__name__} - {str(e)}"
@@ -98,12 +133,18 @@ class Packet:
                 stack['DNS'] = {
                     'id': packet[DNS].id,
                     'qr': packet[DNS].qr,
-                    'opcode': packet[DNS].opcode
+                    'opcode': packet[DNS].opcode,
+                    'questions': packet[DNS].qd,
+                    'answers': packet[DNS].an,
+                    'authorities': packet[DNS].ns,
+                    'additional': packet[DNS].ar
                 }
             elif packet.haslayer(SNMP):
                 stack['SNMP'] = {
                     'version': packet[SNMP].version,
-                    'community': packet[SNMP].community.decode('utf-8', errors='ignore')
+                    'community': packet[SNMP].community.decode('utf-8', errors='ignore'),
+                    'pdu_type': packet[SNMP].PDU,
+                    'variable_bindings': packet[SNMP].varbindlist
                 }
             
             if UDP in packet and (packet[UDP].sport == 123 or packet[UDP].dport == 123):
@@ -113,7 +154,14 @@ class Packet:
                         'mode': packet[NTP].mode,
                         'stratum': packet[NTP].stratum,
                         'poll': packet[NTP].poll,
-                        'precision': packet[NTP].precision
+                        'precision': packet[NTP].precision,
+                        'root_delay': packet[NTP].rootdelay,
+                        'root_dispersion': packet[NTP].rootdispersion,
+                        'ref_id': packet[NTP].refid,
+                        'ref_timestamp': packet[NTP].reftime,
+                        'orig_timestamp': packet[NTP].origtime,
+                        'recv_timestamp': packet[NTP].recvtime,
+                        'trans_timestamp': packet[NTP].transtime
                     }
              
             # HTTPS (assuming it's over TCP port 443)
@@ -127,7 +175,12 @@ class Packet:
             if TCP in packet and (packet[TCP].sport in [1883, 8883] or packet[TCP].dport in [1883, 8883]):
                 stack['MQTT'] = {
                     'sport': packet[TCP].sport,
-                    'dport': packet[TCP].dport
+                    'dport': packet[TCP].dport,
+                    'type': packet[Raw].load[0] >> 4 if Raw in packet else None,  # Extract the message type from the first byte
+                    'flags': packet[Raw].load[0] & 0x0F if Raw in packet else None,  # Extract the flags from the first byte
+                    'remaining_length': len(packet[Raw].load) - 1 if Raw in packet else None,  # Remaining length is the length of the packet minus the fixed header
+                    'variable_header': packet[Raw].load[1:] if Raw in packet else '',  # Extract the variable header
+                    'payload': packet[Raw].load[1:] if Raw in packet else ''
                 }
             if TCP in packet and (packet[TCP].sport == 21 or packet[TCP].dport == 21):
                 stack['FTP'] = {
@@ -137,7 +190,9 @@ class Packet:
                 if Raw in packet:
                     payload = packet[Raw].load.decode('utf-8', errors='ignore')
                     if payload.startswith(('USER ', 'PASS ', 'RETR ', 'STOR ')):
-                        stack['FTP']['command'] = payload.split()[0]
+                        command, *arguments = payload.split()
+                        stack['FTP']['command'] = command
+                        stack['FTP']['arguments'] = ' '.join(arguments)
                         
             if TCP in packet and (packet[TCP].sport == 22 or packet[TCP].dport == 22):
                 stack['SSH'] = {
@@ -158,12 +213,10 @@ class Packet:
                 ('NICK ' in payload or 'JOIN #' in payload or 'PRIVMSG ' in payload):
                     stack['IRC'] = {
                         'sport': packet[TCP].sport,
-                        'dport': packet[TCP].dport
+                        'dport': packet[TCP].dport,
+                        'command': payload.split()[0] if ' ' in payload else payload.strip(),
+                        'params': ' '.join(payload.split()[1:]) if ' ' in payload else ''
                     }
-                    if payload:
-                        command = payload.split()[0] if ' ' in payload else payload.strip()
-                        stack['IRC']['command'] = command
-
                         
         except Exception as e:
             stack['error'] = f"Error decoding packet: {str(e)}"
@@ -261,4 +314,4 @@ class ParallelPCAPReader:
         return self.processed_packets / self.total_packets if self.total_packets > 0 else 0
 
 if __name__ == "__main__":
-    pass
+    pass 
