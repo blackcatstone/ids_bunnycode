@@ -191,3 +191,67 @@ class StreamAnalyzer:
             'tcp': tcp_streams,
             'udp': udp_groups
         }
+        
+    def get_network_layer_statistics(self):
+        stats = {
+            'IP': {'count': 0, 'avg_ttl': 0, 'fragmented': 0},
+            'IPv6': {'count': 0, 'avg_hlim': 0},
+            'ARP': {'count': 0}
+        }
+        
+        for stream in self.tcp_stream.streams.values():
+            for packet in stream['client'].values():
+                if isinstance(packet, dict) and 'protocol_stack' in packet:
+                    protocol_stack = packet['protocol_stack']
+                    if 'IP' in protocol_stack:
+                        stats['IP']['count'] += 1
+                        stats['IP']['avg_ttl'] += protocol_stack['IP']['ttl']
+                        if protocol_stack['IP']['flags'] & 0x1:  # More fragments flag
+                            stats['IP']['fragmented'] += 1
+                    elif 'IPv6' in protocol_stack:
+                        stats['IPv6']['count'] += 1
+                        stats['IPv6']['avg_hlim'] += protocol_stack['IPv6']['hlim']
+                    elif 'ARP' in protocol_stack:
+                        stats['ARP']['count'] += 1
+        
+        if stats['IP']['count'] > 0:
+            stats['IP']['avg_ttl'] /= stats['IP']['count']
+        if stats['IPv6']['count'] > 0:
+            stats['IPv6']['avg_hlim'] /= stats['IPv6']['count']
+        
+        return stats
+    
+    def get_transport_layer_statistics(self):
+        stats = {
+            'TCP': {'count': 0, 'avg_window_size': 0},
+            'UDP': {'count': 0},
+            'ICMP': {'count': 0, 'type_distribution': {}}
+        }
+        
+        for stream in self.tcp_stream.streams.values():
+            for packet in stream['client'].values():
+                if 'TCP' in packet.protocol_stack:
+                    stats['TCP']['count'] += 1
+                    stats['TCP']['avg_window_size'] += packet.protocol_stack['TCP']['window']
+                elif 'UDP' in packet.protocol_stack:
+                    stats['UDP']['count'] += 1
+                elif 'ICMP' in packet.protocol_stack:
+                    stats['ICMP']['count'] += 1
+                    icmp_type = packet.protocol_stack['ICMP']['type']
+                    stats['ICMP']['type_distribution'][icmp_type] = stats['ICMP']['type_distribution'].get(icmp_type, 0) + 1
+        
+        if stats['TCP']['count'] > 0:
+            stats['TCP']['avg_window_size'] /= stats['TCP']['count']
+        
+        return stats
+    
+    def get_enhanced_statistics(self):
+        basic_stats = self.get_statistics()
+        network_stats = self.get_network_layer_statistics()
+        transport_stats = self.get_transport_layer_statistics()
+        
+        return {
+            **basic_stats,
+            'network_layer': network_stats,
+            'transport_layer': transport_stats
+        }
