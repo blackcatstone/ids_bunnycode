@@ -1,0 +1,29 @@
+# BunnyCode custom rules
+#
+# Here is only Network lyaer's rules
+#
+# Customize rules to your needs
+#
+# DDoS ICMP
+alert icmp any any -> any any (msg:"DDoS ICMP Detected"; itype:8; ttl:64; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-icmp; sid:2001; rev:1;)
+# DoS ICMP
+alert icmp any any -> any any (msg:"ICMP Dst Unreachable Detected - UDP Flooding Suspected"; itype:3; icode:3; threshold:type both, track by_dst, count 100, seconds 10; classtype:dos-icmp-udp; sid:2010; rev:1;)
+# DDoS SYN
+alert tcp any any -> any any (msg:"SYN Flooding Detected - DDoS"; flags:S; dsize:0; window:512; threshold:type both, track by_src, count 100, seconds 1; classtype:ddos-syn; sid:2002; rev:1;)
+# DoS SYN
+alert tcp any any -> any any (msg:"SYN Flooding Detected - DoS"; flags:S; dsize:0; window:512; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-syn; sid:2003; rev:1;)
+# DDoS TCP
+alert tcp any any -> any any (msg:"TCP Flooding Detected - DDoS dsize0"; flags:0; window:512; dsize:0; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-tcp-dsize0; sid:2004; rev:1;)
+alert tcp any any -> any any (msg:"TCP Flooding Detected - DDoS dsize120"; flags:0; window:512; dsize:120; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-tcp-dsize120; sid:2005; rev:1;)
+# DoS TCP
+alert tcp any any -> any any (msg:"TCP Flooding Detected - DoS"; flags:0; window:512; dsize:0; threshold:type both, track by_dst, count 100, seconds 10; classtype:dos-tcp; sid:2006; rev:1;)
+# DDoS UDP
+alert udp any any -> any any (msg:"UDP Flooding Detected - DDoS"; dsize:8; threshold:type both, track by_src, count 100, seconds 1; classtype:ddos-udp; sid:2015; rev:1;)
+# DoS UDP
+alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize0"; dsize:0; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize0; sid:2007; rev:1;)
+alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize120"; content:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; nocase; depth:120; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize120; sid:2008; rev:1;)
+alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize140"; content:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; nocase; depth:140; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize140; sid:2009; rev:1;)
+alert udp any any -> any 123 (msg:"UDP Flooding Detected on NTP Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-123; sid:2011; rev:1;)
+alert udp any any -> any 1900 (msg:"UDP Flooding Detected on SSDP Port"; dsize:8; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-1900; sid:2012; rev:1;)
+alert udp any any -> any 19 (msg:"UDP Flooding Detected on CHARGEN Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-19; sid:2013; rev:1;)
+alert udp any any -> any 434 (msg:"UDP Flooding Detected on MobileIP Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-434; sid:2014; rev:1;)
