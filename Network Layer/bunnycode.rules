@@ -1,29 +1,120 @@
 # BunnyCode custom rules
 #
-# Here is only Network lyaer's rules
+# Network & Application Layer, API
 #
 # Customize rules to your needs
 #
 # DDoS ICMP
-alert icmp any any -> any any (msg:"DDoS ICMP Detected"; itype:8; ttl:64; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-icmp; sid:2001; rev:1;)
+alert icmp any any -> any any (msg:"DDoS ICMP Detected"; itype:8; ttl:64; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-icmp; sid:20001; rev:1;)
 # DoS ICMP
-alert icmp any any -> any any (msg:"ICMP Dst Unreachable Detected - UDP Flooding Suspected"; itype:3; icode:3; threshold:type both, track by_dst, count 100, seconds 10; classtype:dos-icmp-udp; sid:2010; rev:1;)
+alert icmp any any -> any any (msg:"ICMP Dst Unreachable Detected - UDP Flooding Suspected"; itype:3; icode:3; threshold:type both, track by_dst, count 100, seconds 10; classtype:dos-icmp-udp; sid:20010; rev:1;)
 # DDoS SYN
-alert tcp any any -> any any (msg:"SYN Flooding Detected - DDoS"; flags:S; dsize:0; window:512; threshold:type both, track by_src, count 100, seconds 1; classtype:ddos-syn; sid:2002; rev:1;)
+alert tcp any any -> any any (msg:"SYN Flooding Detected - DDoS"; flags:S; dsize:0; window:512; threshold:type both, track by_src, count 100, seconds 1; classtype:ddos-syn; sid:20002; rev:1;)
 # DoS SYN
-alert tcp any any -> any any (msg:"SYN Flooding Detected - DoS"; flags:S; dsize:0; window:512; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-syn; sid:2003; rev:1;)
+alert tcp any any -> any any (msg:"SYN Flooding Detected - DoS"; flags:S; dsize:0; window:512; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-syn; sid:20003; rev:1;)
 # DDoS TCP
-alert tcp any any -> any any (msg:"TCP Flooding Detected - DDoS dsize0"; flags:0; window:512; dsize:0; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-tcp-dsize0; sid:2004; rev:1;)
-alert tcp any any -> any any (msg:"TCP Flooding Detected - DDoS dsize120"; flags:0; window:512; dsize:120; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-tcp-dsize120; sid:2005; rev:1;)
+alert tcp any any -> any any (msg:"TCP Flooding Detected - DDoS dsize0"; flags:0; window:512; dsize:0; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-tcp-dsize0; sid:20004; rev:1;)
+alert tcp any any -> any any (msg:"TCP Flooding Detected - DDoS dsize120"; flags:0; window:512; dsize:120; threshold:type both, track by_dst, count 100, seconds 1; classtype:ddos-tcp-dsize120; sid:20005; rev:1;)
 # DoS TCP
-alert tcp any any -> any any (msg:"TCP Flooding Detected - DoS"; flags:0; window:512; dsize:0; threshold:type both, track by_dst, count 100, seconds 10; classtype:dos-tcp; sid:2006; rev:1;)
+alert tcp any any -> any any (msg:"TCP Flooding Detected - DoS"; flags:0; window:512; dsize:0; threshold:type both, track by_dst, count 100, seconds 10; classtype:dos-tcp; sid:20006; rev:1;)
 # DDoS UDP
-alert udp any any -> any any (msg:"UDP Flooding Detected - DDoS"; dsize:8; threshold:type both, track by_src, count 100, seconds 1; classtype:ddos-udp; sid:2015; rev:1;)
+alert udp any any -> any any (msg:"UDP Flooding Detected - DDoS"; dsize:8; threshold:type both, track by_src, count 100, seconds 1; classtype:ddos-udp; sid:20015; rev:1;)
 # DoS UDP
-alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize0"; dsize:0; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize0; sid:2007; rev:1;)
-alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize120"; content:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; nocase; depth:120; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize120; sid:2008; rev:1;)
-alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize140"; content:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; nocase; depth:140; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize140; sid:2009; rev:1;)
-alert udp any any -> any 123 (msg:"UDP Flooding Detected on NTP Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-123; sid:2011; rev:1;)
-alert udp any any -> any 1900 (msg:"UDP Flooding Detected on SSDP Port"; dsize:8; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-1900; sid:2012; rev:1;)
-alert udp any any -> any 19 (msg:"UDP Flooding Detected on CHARGEN Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-19; sid:2013; rev:1;)
-alert udp any any -> any 434 (msg:"UDP Flooding Detected on MobileIP Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-434; sid:2014; rev:1;)
+alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize0"; dsize:0; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize0; sid:20007; rev:1;)
+alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize120"; content:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; nocase; depth:120; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize120; sid:20008; rev:1;)
+alert udp any any -> any any (msg:"UDP Flooding Detected - DoS dsize140"; content:"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; nocase; depth:140; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-dsize140; sid:20009; rev:1;)
+alert udp any any -> any 123 (msg:"UDP Flooding Detected on NTP Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-123; sid:20011; rev:1;)
+alert udp any any -> any 1900 (msg:"UDP Flooding Detected on SSDP Port"; dsize:8; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-1900; sid:20012; rev:1;)
+alert udp any any -> any 19 (msg:"UDP Flooding Detected on CHARGEN Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-19; sid:20013; rev:1;)
+alert udp any any -> any 434 (msg:"UDP Flooding Detected on MobileIP Port"; threshold:type both, track by_src, count 100, seconds 10; classtype:dos-udp-434; sid:20014; rev:1;)
+
+# XSS
+alert http any any -> any any (msg:"XSS Attempt Detected: <script> tag in HTTP traffic"; flow:to_server,established; content:"%3Cscript%3E"; http_client_body; classtype:xss-script; sid:20101; rev:2;)
+# File Upload
+alert http any any -> any any (msg:"Command Injection Attempt Detected in HTTP Request"; flow:to_server,established; content:"cmd="; http_uri; pcre:"/cmd=[a-zA-Z0-9%]+/"; classtype:file-upload-1; sid:20103; rev:1;)
+alert http any any -> any any (msg:"PHP File Upload Attempt - PHP Filename Detected"; flow:to_server,established; content:"filename=\""; http_header; content:".php\""; within:50; classtype:file-upload-2; metadata:service http; sid:20104; rev:1;)
+alert http any any -> any any (msg:"PHP File Upload Attempt - PHP Content-Type Detected"; flow:to_server,established; content:"Content-Type: application/x-php"; http_header; classtype:file-upload-3; metadata:service http; sid:20121; rev:1;)
+# SQL Injection
+alert http any any -> any any (msg:"Potential SQL Injection Attack"; flow:established,to_server; uricontent:"SELECT"; nocase; uricontent:"UNION"; nocase; uricontent:"UPDATE"; nocase; uricontent:"DELETE"; nocase; uricontent:"1=1"; nocase; classtype:sql-injection; sid:20108; rev:2;)
+# Brute Force
+alert ssh any any -> any any (msg:"Potential SSH Brute Force Attack - Multiple SSH Protocol Handshakes"; flow:established,to_server; content:"SSH-"; threshold:type both, track by_src, count 10, seconds 60; classtype:brute-force-1; sid:20109; rev:1;)
+alert ssh any any -> any any (msg:"Potential SSH Brute Force Attack - Multiple SSH Key Exchange Init"; flow:established,to_server; content:"Key Exchange Init"; threshold:type both, track by_src, count 10, seconds 60; classtype:brute-force-2; sid:20110; rev:1;)
+alert ssh any any -> any any (msg:"Potential SSH Brute Force Attack - Multiple SSH Diffie-Hellman Key Exchange Init"; flow:established,to_server; content:"Elliptic Curve Diffie-Hellman Key Exchange Init"; threshold:type both, track by_src, count 10, seconds 60; classtype:brute-force-3; sid:20111; rev:1;)
+alert http any any -> any any (msg:"Suspicious HTTP Activity - Potential Brute Force or Probing Attempt"; flow:established,to_server; uricontent:"/util/query.cgi"; nocase; uricontent:"/check_user.cgi?user=test&pwd=test"; nocase; uricontent:"/SDK/activateStatus"; nocase; threshold:type both, track by_src, count 5, seconds 60; classtype:brute-force-4; sid:20112; rev:2;)
+# Command Injection
+alert http any any -> any any (msg:"Possible Command Injection Attempt - General"; content:"POST"; http_method; content:"application/x-www-form-urlencoded"; http_header; pcre:"/(\%3B|\%26|\%7C|\%24|\%3E|\%3C|\%60|\%28|\%29|\%22|\%27)/i"; content:"/bin/"; pkt_data; content:"cmd="; flow:established,to_server; classtype:command-injection; sid:20117; rev:1;)
+# BackDoor
+alert http any any -> any any (msg:"Potential Backdoor Communication - Repeated POST requests with parameters"; flow:established,to_server; http.method; content:"POST"; http.uri; content:".php"; pkt_data; content:"pwd="; threshold:type both, track by_src, count 10, seconds 60; classtype:attempted-admin; sid:20113; rev:1;)
+alert http any any -> any any (msg:"Specific Backdoor Communication - POST to /dvwa/hackable/uploads/backdoorNew.php with pwd=123456"; flow:established,to_server; http.method; content:"POST"; http.uri; content:"/dvwa/hackable/uploads/backdoorNew.php"; pkt_data; content:"pwd=123456"; threshold:type both, track by_src, count 5, seconds 300; classtype:attempted-admin; sid:20114; rev:1;)
+# Vunlnerability Scan
+alert http any any -> any any (msg:"Potential vulnerability scan - Frequent HTTP GET requests to the same endpoint"; flow:established,to_server; content:"GET"; http_method; threshold:type both, track by_src, count 30, seconds 60; classtype:attempted-recon; sid:20105; rev:1;)
+alert http any any -> any any (msg:"Potential vulnerability scan - Frequent HTTP GET requests to the same endpoint"; flow:established,to_server; content:"GET"; http_method; content:"/weatherapi/locationforecast/1.9/?lat=52.25\;lon=16.53"; http_uri; threshold:type both, track by_src, count 10, seconds 60; classtype:attempted-recon; sid:20106; rev:1;)
+
+# API
+alert http any any -> any any (msg:"HTTP traffic detected"; sid:999999; rev:1;)
+
+alert tcp any any -> 175.210.7.224 8899 (msg:"Capture traffic on 8899"; sid:100337; rev:1;)
+
+alert tcp any any -> 172.16.26.15 8899 (msg:"Capture traffic on 8899"; sid:301337; rev:1;)
+
+alert tcp any any -> 159.138.22.116 8899 (msg:"Capture traffic on 8899"; sid:400771; rev:1;)
+
+alert tcp any any -> 119.8.43.117 8899 (msg:"Capture traffic on 8899"; sid:500771; rev:1;)
+
+alert tcp any any -> 101.44.71.180 8899 (msg:"Capture traffic on 8899"; sid:600771; rev:1;)
+
+
+#alert tcp any any -> 175.210.7.224 any (msg:"Capture traffic"; sid:102337; rev:1;)
+
+alert tcp any any -> 172.16.26.15 any (msg:"Capture traffic"; sid:300339; rev:1;)
+
+alert tcp any any -> 159.138.22.116 any (msg:"Capture traffic"; sid:400772; rev:1;)
+
+alert tcp any any -> 119.8.43.117 any (msg:"Capture traffic"; sid:500772; rev:1;)
+
+alert tcp any any -> 101.44.71.180 any (msg:"Capture traffic"; sid:600773; rev:1;)
+
+alert http any any -> any any (msg:"upass mismatch"; content:"upass="; pcre:"/upass=[^r][^m][^t][^k][^f][^k][^a][^d][^m][^l][^5][^1][^2][^%][^4][^0]/"; sid:100887; rev:1;)
+
+alert http any any -> any any (msg:"uname mismatch"; content:"uname="; pcre:"/uname=[^w][^h][^d][^w][^n][^s][^1][^2][^3]/"; sid:100653; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious HTTP Request - devId or releaseDate mismatch"; content:"devId"; content:"releaseDate"; pcre:"/\{\"devId\":\"N51809P8XXXXX0000170000000\",\"releaseDate\":\"2023-08-17 14:10:11\"\}/"; sid:101301; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious HTTP Request - shareUuid mismatch"; content:"uname=whdwns456&upass=iottest11%21"; content:"shareUuid=287ef314d40c37b4"; sid:101302; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious HTTP Request - search parameter mismatch"; content:"uname=whdwns456&upass=iottest11%21"; content:"search=whdwns123"; sid:101303; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious HTTP Request - acceptId or powers or permissions mismatch"; content:"uname=whdwns456&upass=iottest11%21"; content:"shareUuid=287ef314d40c37b4"; content:"acceptId=ZDEyYmE2MWNhYWM0NDVlYWE4YmQ5Nm6YwOTM5ZWJlZjcmOiZ3aGR3bnMxMjM%3D"; content:"powers=%7B%22devInfo%22%3A%22PmW40d1s0bQiWvu9avvG9P8GvX8c9DdX5g0c60l8eb3w2o9ktGbiOQkU0GwQlVGljP1Df12lTFuetfz%22%7D"; content:"permissions=DP_PTZ%2CDP_Intercom%2CDP_LocalStorage"; sid:101304; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious HTTP Request - devId mismatch"; content:"uname=whdwns456&upass=iottest11%21"; content:"devId=66b32c5b3eb6e0ba6947c95d"; sid:101305; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious HTTP Request - shareId or permissions mismatch"; content:"uname=whdwns456&upass=iottest11%21"; content:"shareId=66b5bdcfe378e0ba570aac83"; content:"permissions=DP_PTZ%2CDP_Intercom%2CDP_LocalStorage%2CDP_AlarmPush"; sid:101306; rev:1;)
+
+
+alert http any any -> any any (msg:"Suspicious HTTP Response - Detected sensitive information"; content:"username\":\"admin\""; content:"account\":\"whd**s456\":"; sid:100443; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious HTTP Response - Possible sensitive data"; pcre:"/\"username\":\"[^\"]*\",\"account\":\"whd\*\*s456\"/"; sid:100334; rev:1;)
+
+
+alert http any any -> any any (msg:"HTTP POST request"; flow:established,to_server; content:"POST"; http_method; sid:100151; rev:1;)
+
+alert http any any -> any any (msg:"Specific HTTP request"; flow:established,to_server; http.uri; content:"/mdsharemylist/v1/00000141723411381924/40eef9f55de97a921c5dec8c1631df39.rs?uname=whdwns456&upass=iottest11%21"; sid:100152; rev:1;)
+
+alert http any any -> any any (msg:"HTTP request with Host rs.xmeye.net"; flow:established,to_server; content:"Host: rs.xmeye.net"; http_header; sid:100154; rev:1;)
+
+alert http any any -> any any (msg:"Potential SQL Injection - Burp Suite"; flow:established,to_server; content:"UNION SELECT"; nocase; http_client_body; classtype:web-application-attack; sid:100339; rev:1;)
+
+alert http any any -> any any (msg:"Potential XSS Attack - Burp Suite"; flow:established,to_server; content:"<script>"; nocase; http_client_body; classtype:web-application-attack; sid:100291; rev:1;)
+
+alert http any any -> any any (msg:"Suspicious POST request to upgrade.secu100.net"; flow:established,to_server; content:"POST /latestCacheMulti?"; http_method; content:"Host: upgrade.secu100.net"; http_header; content:"User-Agent: okhttp/3.12.0"; http_header; content:"Content-Type: application/json"; http_header; classtype:web-application-attack; sid:100250; rev:1;)
+
+
+alert http any any -> any any (msg:"Suspicious Host header - rs.xmeye.net"; flow:established,to_server; content:"Host: rs.xmeye.net"; http_header; sid:100255; rev:1;)
+
+alert http any any -> any any (msg:"Request to upgrade.secu100.net"; flow:established,to_server; content:"Host: upgrade.secu100.net"; http_header; sid:101252; rev:1;)
+
+alert http any any -> any any (msg:"Request to caps.xmcsrv.net"; flow:established,to_server; content:"Host: caps.xmcsrv.net"; http_header; sid:100252; rev:1;)
+
+alert http any any -> any any (msg:"Content-Type application/json detected"; flow:established,to_server; content:"Content-Type: application/json"; http_header; sid:100254; rev:1;)
+
+alert http any any -> any any (msg:"Connection: keep-alive detected"; flow:established,to_server; content:"Connection: keep-alive"; http_header; sid:101254; rev:1;)
