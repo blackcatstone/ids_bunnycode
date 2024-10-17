@@ -1,3 +1,5 @@
+![image](https://github.com/user-attachments/assets/b048ab83-4413-4f9f-bb58-9908b7c5841f)
+
 # Suricata_ids
 
 CIC-2023이 제공하는 dataset에 맞춰 Network & Applicataion Layer 공격 시나리오를 정했습니다.
@@ -27,3 +29,21 @@ pip install tqdm
 분석할 파일 경로는 절대경로로 해주시면 돼요(상대경로로는 제가 안해봤습니다)
 
 디코딩 모듈이 잘 만들어지면 텍스트 파일 만드는 부분은 제거를 할 겁니다.
+
+목표 : IoT 네트워크 패킷 분석 시스템 개발  
+인원 : 4명  
+역할 : 팀장(PM) / IoT Deep Dive  
+개발일정 : 2024.06.13~2024.08.16  
+사용기술 : Suricata, Wireshark, BurpSuite, Vmwear, Nox, Ipcam  
+프로젝트 요약 : 실제 기기 IoT 네트워크패킷   
+실시간 분석 및 위협 탐지 IDS 개발 , 로그 저장  
+Notion : [Team page](https://heavenly-sponge-d64.notion.site/Bunny-code-3aef037d03064dbd8203f8008ec14000)
+실행영상 : [youtube1](https://www.youtube.com/watch?v=cajhnAtPMB0&t=1s), [youtube2](https://www.youtube.com/watch?v=Hnw5r-zYygs), [youtube3](https://www.youtube.com/watch?v=TrMiYTCxhuE)
+기획안 : [Google Drive](https://drive.google.com/file/d/19mj3-EDCOLqJ2pD5kfY_OSwfh8t4DmJV/view),  [Google Drive2](https://drive.google.com/file/d/1q25tTZvHWgv_Y-Ysz5jcpdYpq0SAiVzP/view)
++ 기획안은 프로젝트의 주제가 2번 변경되어 조금 다를수 있습니다.
++ ㄴ 구름 & 카카오 프로젝트 진행 중 관리자의 전달 실수로 인하여 변경됨.
+발표자료 : [Google Drive](https://drive.google.com/file/d/1Lzg4cSfM-lOgUni9AhSGEI7BzxtjDtQc/view)
+개인기록 : [Notion Link](https://heavenly-sponge-d64.notion.site/7fd7f55381d94c9e9e091c83fb029b71)
+
+
+
